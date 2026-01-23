@@ -3,16 +3,48 @@ import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import seaborn as sns
 
-# ---------------------------
-# Page Config
-# ---------------------------
-st.set_page_config(page_title="Spotify Song Success Predictor", layout="wide")
+# ---------------------------------
+# PAGE CONFIG
+# ---------------------------------
+st.set_page_config(
+    page_title="Spotify Song Success Intelligence",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-# ---------------------------
-# Load Data & Model
-# ---------------------------
+# ---------------------------------
+# CUSTOM GREEN THEME CSS
+# ---------------------------------
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+    color: white;
+}
+.main {
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+}
+h1, h2, h3 {
+    color: #1DB954;
+}
+.card {
+    background: rgba(255,255,255,0.08);
+    padding: 30px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+.center {
+    text-align: center;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------
+# LOAD DATA & MODEL
+# ---------------------------------
 @st.cache_data
 def load_data():
     return pd.read_csv("spotify_preprocessed_dataset.csv")
@@ -25,119 +57,161 @@ def load_model():
 df = load_data()
 model = load_model()
 
-# ---------------------------
-# Sidebar
-# ---------------------------
-st.sidebar.title("🎵 Navigation")
+# ---------------------------------
+# SIDEBAR NAVIGATION
+# ---------------------------------
 page = st.sidebar.radio(
-    "Go to",
-    ["Home", "Song Popularity Prediction", "Artist & Genre Analysis", "Album Insights", "Song Explorer"]
+    "Navigate",
+    [
+        "Home",
+        "Song Popularity Prediction",
+        "Artist & Genre Analysis",
+        "Album Insights",
+        "Model Performance"
+    ]
 )
 
-# ---------------------------
+# =================================
 # HOME PAGE
-# ---------------------------
+# =================================
 if page == "Home":
-    st.title("🎧 Spotify Song Success Analyzer")
     st.markdown("""
-    ### 📌 Project Objective
-    This web application predicts whether a Spotify song will become **popular (Hit)** or **not popular**
-    using **Logistic Regression**.
+    <div class="center card">
+        <h1>🎧 Spotify Song Success Intelligence Platform</h1>
+        <h3>Machine Learning Based Hit Prediction</h3>
+        <br>
+        <p>Created by <b>Pooja Parmar</b></p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    ### 🔍 Features
-    - Binary classification (Hit / Not Hit)
-    - Artist & genre insights
-    - Album trend analysis
-    - Interactive Streamlit dashboard
-
-    ### 🧠 Model Used
-    - Logistic Regression
-    - Supervised Machine Learning
-    """)
-
-# ---------------------------
-# PREDICTION PAGE
-# ---------------------------
+# =================================
+# SONG POPULARITY PREDICTION
+# =================================
 elif page == "Song Popularity Prediction":
-    st.title("🔥 Song Popularity Prediction (Hit / Not Hit)")
+    st.title("🔥 Song Popularity Prediction")
 
     col1, col2 = st.columns(2)
 
     with col1:
         artist_popularity = st.slider("Artist Popularity", 0, 100, 50)
-        artist_followers = st.number_input("Artist Followers", min_value=0, value=100000)
+        artist_followers = st.number_input("Artist Followers", min_value=0, value=50000)
         track_duration = st.slider("Track Duration (minutes)", 1.0, 10.0, 3.5)
 
     with col2:
         album_type = st.selectbox("Album Type", ["album", "single"])
         explicit = st.selectbox("Explicit Content", ["No", "Yes"])
 
-    album_type_encoded = 1 if album_type == "single" else 0
+    album_encoded = 1 if album_type == "single" else 0
     explicit_encoded = 1 if explicit == "Yes" else 0
 
-    input_data = np.array([[artist_popularity,
-                            artist_followers,
-                            track_duration,
-                            album_type_encoded,
-                            explicit_encoded]])
+    X_input = np.array([[artist_popularity,
+                          artist_followers,
+                          track_duration,
+                          album_encoded,
+                          explicit_encoded]])
 
-    if st.button("Predict"):
-        prediction = model.predict(input_data)[0]
-        probability = model.predict_proba(input_data)[0][1]
+    if st.button("Predict Song Success"):
+        pred = model.predict(X_input)[0]
+        prob = model.predict_proba(X_input)[0][1]
 
-        if prediction == 1:
-            st.success(f"🔥 HIT SONG (Probability: {probability:.2f})")
+        st.subheader("Prediction Result")
+
+        if pred == 1:
+            st.success("🎯 HIT SONG")
         else:
-            st.warning(f"❌ NOT A HIT (Probability: {probability:.2f})")
+            st.error("❌ NOT A HIT")
 
-# ---------------------------
+        st.progress(prob)
+        st.write(f"**Probability of Success:** {prob:.2f}")
+
+        if prob > 0.7:
+            st.write("🟢 **High Confidence Prediction**")
+        elif prob > 0.4:
+            st.write("🟡 **Medium Confidence Prediction**")
+        else:
+            st.write("🔴 **Low Confidence Prediction**")
+
+        st.info(
+            "Songs by popular artists with more followers and single releases "
+            "have a higher chance of becoming successful."
+        )
+
+# =================================
 # ARTIST & GENRE ANALYSIS
-# ---------------------------
+# =================================
 elif page == "Artist & Genre Analysis":
     st.title("🎤 Artist & Genre Analysis")
 
-    top_artists = df.groupby("artist_name")["track_popularity"].mean().sort_values(ascending=False).head(10)
+    st.subheader("Top Genres by Average Popularity")
+    genre_pop = df.groupby("artist_genres")["track_popularity"].mean().sort_values(ascending=False).head(10)
+    st.bar_chart(genre_pop)
 
-    st.subheader("Top 10 Artists by Average Popularity")
-    st.bar_chart(top_artists)
+    st.subheader("Genre Distribution")
+    genre_count = df["artist_genres"].value_counts().head(6)
+    fig1, ax1 = plt.subplots()
+    ax1.pie(genre_count, labels=genre_count.index, autopct="%1.1f%%", startangle=90)
+    ax1.axis("equal")
+    st.pyplot(fig1)
 
-    st.subheader("Followers vs Track Popularity")
-    fig, ax = plt.subplots()
-    sns.scatterplot(
-        x=df["artist_followers"],
-        y=df["track_popularity"],
-        ax=ax
-    )
-    st.pyplot(fig)
+    st.subheader("Artist Popularity Distribution")
+    fig2, ax2 = plt.subplots()
+    ax2.hist(df["artist_popularity"], bins=20)
+    st.pyplot(fig2)
 
-# ---------------------------
+# =================================
 # ALBUM INSIGHTS
-# ---------------------------
+# =================================
 elif page == "Album Insights":
     st.title("💿 Album Insights")
 
-    album_popularity = df.groupby("album_type")["track_popularity"].mean()
-
-    st.subheader("Album Type vs Popularity")
-    st.bar_chart(album_popularity)
-
-    year_trend = df.groupby("album_release_year")["track_popularity"].mean()
+    st.subheader("Album Type vs Popularity (Spread)")
+    fig3, ax3 = plt.subplots()
+    sns.boxplot(x="album_type", y="track_popularity", data=df, ax=ax3)
+    st.pyplot(fig3)
 
     st.subheader("Popularity Trend Over Years")
-    st.line_chart(year_trend)
+    year_trend = df.groupby("album_release_year")["track_popularity"].mean()
+    st.area_chart(year_trend)
 
-# ---------------------------
-# SONG EXPLORER
-# ---------------------------
-elif page == "Song Explorer":
-    st.title("🎶 Song Explorer")
+    st.subheader("Album Size Impact on Popularity")
+    size_trend = df.groupby("album_total_tracks")["track_popularity"].mean()
+    st.line_chart(size_trend)
 
-    song = st.selectbox("Select a Song", df["track_name"].unique())
-    song_data = df[df["track_name"] == song].iloc[0]
+# =================================
+# MODEL PERFORMANCE PAGE
+# =================================
+elif page == "Model Performance":
+    st.title("🧠 Model Performance & Insights")
 
-    st.write("### Song Details")
-    st.write(f"**Artist:** {song_data['artist_name']}")
-    st.write(f"**Popularity:** {song_data['track_popularity']}")
-    st.write(f"**Explicit:** {song_data['explicit']}")
-    st.write(f"**Album Type:** {song_data['album_type']}")
-    st.write(f"**Release Year:** {song_data['album_release_year']}")
+    X = df[
+        ["artist_popularity",
+         "artist_followers",
+         "track_duration_min",
+         "album_type",
+         "explicit"]
+    ].copy()
+
+    X["album_type"] = X["album_type"].apply(lambda x: 1 if x == "single" else 0)
+    X["explicit"] = X["explicit"].apply(lambda x: 1 if x == True else 0)
+
+    y = df["popular"]
+
+    y_pred = model.predict(X)
+
+    cm = confusion_matrix(y, y_pred)
+
+    st.subheader("Confusion Matrix")
+    fig4, ax4 = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax4)
+    st.pyplot(fig4)
+
+    st.subheader("Model Metrics")
+    st.write(f"Accuracy: {accuracy_score(y, y_pred):.2f}")
+    st.write(f"Precision: {precision_score(y, y_pred):.2f}")
+    st.write(f"Recall: {recall_score(y, y_pred):.2f}")
+    st.write(f"F1 Score: {f1_score(y, y_pred):.2f}")
+
+    st.subheader("Feature Importance (Logistic Regression)")
+    importance = pd.Series(model.coef_[0], index=X.columns)
+    st.bar_chart(importance.sort_values(ascending=False))
+
