@@ -1,188 +1,81 @@
 import streamlit as st
 import pandas as pd
 import pickle
-import os
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
+import numpy as np
 
-# --------------------------------------------------
-# PAGE CONFIG
-# --------------------------------------------------
+# ---------------- PAGE CONFIG ----------------
 st.set_page_config(
-    page_title="Spotify Song Success Intelligence",
-    layout="wide"
+    page_title="Spotify Popularity Predictor",
+    page_icon="🎵",
+    layout="centered"
 )
 
-# --------------------------------------------------
-# GREEN THEME
-# --------------------------------------------------
+# ---------------- GREEN THEME CSS ----------------
 st.markdown("""
 <style>
-body { background-color: #0e1117; color: white; }
-h1, h2, h3 { color: #1DB954; }
-.card {
-    background: rgba(255,255,255,0.08);
-    padding: 30px;
-    border-radius: 20px;
+.stApp {
+    background-color: #e8f5e9;
 }
-.center { text-align: center; }
+h1, h2, h3 {
+    color: #1b5e20;
+}
+div[data-testid="stButton"] button {
+    background-color: #2e7d32;
+    color: white;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
-# FILE CHECK (🔥 NEW)
-# --------------------------------------------------
-REQUIRED_FILES = [
-    "model.pkl",
-    "scaler.pkl",
-    "spotify_preprocessed_dataset.csv"
-]
-
-missing_files = [f for f in REQUIRED_FILES if not os.path.exists(f)]
-
-if missing_files:
-    st.error("❌ Required files missing in GitHub repo:")
-    for f in missing_files:
-        st.write(f"- {f}")
-    st.stop()
-
-# --------------------------------------------------
-# LOAD MODEL, SCALER & DATA
-# --------------------------------------------------
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource
 def load_model():
     with open("model.pkl", "rb") as f:
         return pickle.load(f)
 
-@st.cache_resource
-def load_scaler():
-    with open("scaler.pkl", "rb") as f:
-        return pickle.load(f)
-
-@st.cache_data
-def load_data():
-    return pd.read_csv("spotify_preprocessed_dataset.csv")
-
 model = load_model()
-scaler = load_scaler()
-df = load_data()
 
-# --------------------------------------------------
-# FEATURES (MUST MATCH TRAINING)
-# --------------------------------------------------
+# ---------------- FEATURES (FIXED ORDER) ----------------
 FEATURES = [
-    "artist_popularity",
-    "artist_followers",
-    "track_duration_min",
-    "album_type",
-    "explicit"
+    "danceability",
+    "energy",
+    "loudness",
+    "speechiness",
+    "acousticness",
+    "instrumentalness",
+    "liveness",
+    "valence",
+    "tempo"
 ]
 
-# --------------------------------------------------
-# SIDEBAR
-# --------------------------------------------------
-page = st.sidebar.radio(
-    "Navigation",
-    [
-        "Home",
-        "Song Popularity Prediction",
-        "Artist & Genre Analysis",
-        "Album Insights",
-        "Model Performance"
-    ]
-)
+# ---------------- TITLE ----------------
+st.title("🎧 Spotify Song Popularity Predictor")
+st.write("Predict whether a song will be **Popular or Not**")
 
-# ==================================================
-# HOME
-# ==================================================
-if page == "Home":
-    st.markdown("""
-    <div class="center card">
-        <h1>🎧 Spotify Song Success Intelligence</h1>
-        <h3>ML-Based Song Popularity Prediction</h3>
-        <br>
-        <p><b>Created by: Pooja Parmar</b></p>
-    </div>
-    """, unsafe_allow_html=True)
+# ---------------- INPUT UI ----------------
+st.subheader("🎶 Enter Song Features")
 
-# ==================================================
-# SONG POPULARITY PREDICTION
-# ==================================================
-elif page == "Song Popularity Prediction":
-    st.title("🔥 Song Popularity Prediction")
+inputs = {}
+for feature in FEATURES:
+    inputs[feature] = st.slider(
+        feature.capitalize(),
+        min_value=0.0,
+        max_value=250.0 if feature == "tempo" else 1.0,
+        value=0.5
+    )
 
-    col1, col2 = st.columns(2)
+# ---------------- PREDICTION ----------------
+if st.button("🎯 Predict Popularity"):
+    input_df = pd.DataFrame([inputs])
 
-    with col1:
-        artist_popularity = st.slider("Artist Popularity", 0, 100, 50)
-        artist_followers = st.number_input("Artist Followers", min_value=0, value=50000)
-        track_duration_min = st.slider("Track Duration (minutes)", 1.0, 10.0, 3.5)
+    try:
+        prediction = model.predict(input_df)[0]
 
-    with col2:
-        album_type = st.selectbox("Album Type", ["album", "single"])
-        explicit = st.selectbox("Explicit Content", ["No", "Yes"])
-
-    if st.button("Predict Song Success"):
-        input_df = pd.DataFrame([{
-            "artist_popularity": artist_popularity,
-            "artist_followers": artist_followers,
-            "track_duration_min": track_duration_min,
-            "album_type": 1 if album_type == "single" else 0,
-            "explicit": 1 if explicit == "Yes" else 0
-        }])
-
-        input_scaled = scaler.transform(input_df)
-
-        pred = model.predict(input_scaled)[0]
-        prob = model.predict_proba(input_scaled)[0][1]
-
-        if pred == 1:
-            st.success("🎯 HIT SONG")
+        if prediction == 1:
+            st.success("🔥 This song is likely to be **POPULAR**!")
         else:
-            st.error("❌ NOT A HIT")
+            st.warning("🎵 This song is likely to be **NOT popular**")
 
-        st.progress(float(prob))
-        st.write(f"**Probability of Success:** {prob:.2f}")
-
-# ==================================================
-# ARTIST & GENRE ANALYSIS
-# ==================================================
-elif page == "Artist & Genre Analysis":
-    st.title("🎤 Artist & Genre Analysis")
-
-    top_genres = df.groupby("artist_genres")["track_popularity"].mean().sort_values(ascending=False).head(10)
-    st.bar_chart(top_genres)
-
-# ==================================================
-# ALBUM INSIGHTS
-# ==================================================
-elif page == "Album Insights":
-    st.title("💿 Album Insights")
-
-    fig, ax = plt.subplots()
-    sns.boxplot(x="album_type", y="track_popularity", data=df, ax=ax)
-    st.pyplot(fig)
-
-# ==================================================
-# MODEL PERFORMANCE
-# ==================================================
-elif page == "Model Performance":
-    st.title("🧠 Model Performance")
-
-    X = df[FEATURES]
-    y = df["popular"]
-
-    X_scaled = scaler.transform(X)
-    y_pred = model.predict(X_scaled)
-
-    cm = confusion_matrix(y, y_pred)
-
-    fig, ax = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax)
-    st.pyplot(fig)
-
-    st.write("Accuracy:", accuracy_score(y, y_pred))
-    st.write("Precision:", precision_score(y, y_pred))
-    st.write("Recall:", recall_score(y, y_pred))
-    st.write("F1 Score:", f1_score(y, y_pred))
+    except Exception as e:
+        st.error("❌ Prediction failed")
+        st.write(e)
