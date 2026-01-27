@@ -1,15 +1,10 @@
 import streamlit as st
 import pandas as pd
 import pickle
+import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.metrics import (
-    confusion_matrix,
-    accuracy_score,
-    precision_score,
-    recall_score,
-    f1_score
-)
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -20,7 +15,7 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# GREEN THEME CSS
+# GREEN THEME
 # --------------------------------------------------
 st.markdown("""
 <style>
@@ -34,6 +29,23 @@ h1, h2, h3 { color: #1DB954; }
 .center { text-align: center; }
 </style>
 """, unsafe_allow_html=True)
+
+# --------------------------------------------------
+# FILE CHECK (🔥 NEW)
+# --------------------------------------------------
+REQUIRED_FILES = [
+    "model.pkl",
+    "scaler.pkl",
+    "spotify_preprocessed_dataset.csv"
+]
+
+missing_files = [f for f in REQUIRED_FILES if not os.path.exists(f)]
+
+if missing_files:
+    st.error("❌ Required files missing in GitHub repo:")
+    for f in missing_files:
+        st.write(f"- {f}")
+    st.stop()
 
 # --------------------------------------------------
 # LOAD MODEL, SCALER & DATA
@@ -57,7 +69,7 @@ scaler = load_scaler()
 df = load_data()
 
 # --------------------------------------------------
-# FEATURES (MUST MATCH TRAINING EXACTLY)
+# FEATURES (MUST MATCH TRAINING)
 # --------------------------------------------------
 FEATURES = [
     "artist_popularity",
@@ -68,7 +80,7 @@ FEATURES = [
 ]
 
 # --------------------------------------------------
-# SIDEBAR NAVIGATION
+# SIDEBAR
 # --------------------------------------------------
 page = st.sidebar.radio(
     "Navigation",
@@ -82,13 +94,13 @@ page = st.sidebar.radio(
 )
 
 # ==================================================
-# HOME PAGE
+# HOME
 # ==================================================
 if page == "Home":
     st.markdown("""
     <div class="center card">
         <h1>🎧 Spotify Song Success Intelligence</h1>
-        <h3>ML-Based Hit Song Prediction System</h3>
+        <h3>ML-Based Song Popularity Prediction</h3>
         <br>
         <p><b>Created by: Pooja Parmar</b></p>
     </div>
@@ -104,19 +116,14 @@ elif page == "Song Popularity Prediction":
 
     with col1:
         artist_popularity = st.slider("Artist Popularity", 0, 100, 50)
-        artist_followers = st.number_input(
-            "Artist Followers", min_value=0, value=50000
-        )
-        track_duration_min = st.slider(
-            "Track Duration (minutes)", 1.0, 10.0, 3.5
-        )
+        artist_followers = st.number_input("Artist Followers", min_value=0, value=50000)
+        track_duration_min = st.slider("Track Duration (minutes)", 1.0, 10.0, 3.5)
 
     with col2:
         album_type = st.selectbox("Album Type", ["album", "single"])
         explicit = st.selectbox("Explicit Content", ["No", "Yes"])
 
     if st.button("Predict Song Success"):
-        # Create input dataframe
         input_df = pd.DataFrame([{
             "artist_popularity": artist_popularity,
             "artist_followers": artist_followers,
@@ -125,10 +132,8 @@ elif page == "Song Popularity Prediction":
             "explicit": 1 if explicit == "Yes" else 0
         }])
 
-        # 🔑 SCALE INPUT (DO NOT FIT AGAIN)
         input_scaled = scaler.transform(input_df)
 
-        # Prediction
         pred = model.predict(input_scaled)[0]
         prob = model.predict_proba(input_scaled)[0][1]
 
@@ -146,24 +151,8 @@ elif page == "Song Popularity Prediction":
 elif page == "Artist & Genre Analysis":
     st.title("🎤 Artist & Genre Analysis")
 
-    top_genres = (
-        df.groupby("artist_genres")["track_popularity"]
-        .mean()
-        .sort_values(ascending=False)
-        .head(10)
-    )
-
-    st.subheader("Top Genres by Average Popularity")
+    top_genres = df.groupby("artist_genres")["track_popularity"].mean().sort_values(ascending=False).head(10)
     st.bar_chart(top_genres)
-
-    fig, ax = plt.subplots()
-    genre_count = df["artist_genres"].value_counts().head(6)
-    ax.pie(
-        genre_count,
-        labels=genre_count.index,
-        autopct="%1.1f%%"
-    )
-    st.pyplot(fig)
 
 # ==================================================
 # ALBUM INSIGHTS
@@ -172,19 +161,8 @@ elif page == "Album Insights":
     st.title("💿 Album Insights")
 
     fig, ax = plt.subplots()
-    sns.boxplot(
-        x="album_type",
-        y="track_popularity",
-        data=df,
-        ax=ax
-    )
+    sns.boxplot(x="album_type", y="track_popularity", data=df, ax=ax)
     st.pyplot(fig)
-
-    year_trend = (
-        df.groupby("album_release_year")["track_popularity"]
-        .mean()
-    )
-    st.area_chart(year_trend)
 
 # ==================================================
 # MODEL PERFORMANCE
@@ -201,13 +179,7 @@ elif page == "Model Performance":
     cm = confusion_matrix(y, y_pred)
 
     fig, ax = plt.subplots()
-    sns.heatmap(
-        cm,
-        annot=True,
-        fmt="d",
-        cmap="Greens",
-        ax=ax
-    )
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax)
     st.pyplot(fig)
 
     st.write("Accuracy:", accuracy_score(y, y_pred))
