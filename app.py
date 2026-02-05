@@ -194,7 +194,7 @@ elif page == "Model Performance":
     X["album_type"] = X["album_type"].apply(lambda x: 1 if x == "single" else 0)
     X["explicit"] = X["explicit"].apply(lambda x: 1 if x == True else 0)
     st.write(X.describe())
-    print(X.head())
+    st.write(X.head())
     y = df["popular"]
     X.describe()
     # y_pred = model.predict(X)
