@@ -47,7 +47,10 @@ h1, h2, h3 {
 # ---------------------------------
 @st.cache_data
 def load_data():
-    return pd.read_csv("spotify_preprocessed_dataset.csv")
+    df=pd.read_csv("spotify_preprocessed_dataset.csv")
+    st.write('Loading Data')
+    st.write(df.head())
+    return 
 
 @st.cache_resource
 def load_model():
