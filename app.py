@@ -187,12 +187,9 @@ elif page == "Model Performance":
     
    
     X = df[
-        ["track_number",
-            "artist_popularity",
-         "artist_followers",
-         "track_duration_min",
-         "album_type",
-         "explicit"]
+        ["track_number","track_popularity", "explicit", "artist_popularity",  "artist_followers", "album_total_tracks",  "track_duration_min",
+         "album_release_year"
+         ]
     ].copy()
 
     X["album_type"] = X["album_type"].apply(lambda x: 1 if x == "single" else 0)
