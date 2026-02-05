@@ -188,7 +188,7 @@ elif page == "Model Performance":
    
     X = df[
         ["track_number","track_popularity", "explicit", "artist_popularity",  "artist_followers", "album_total_tracks",  "track_duration_min",
-         "album_release_year"
+         "album_type"
          ]
     ].copy()
 
