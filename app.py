@@ -50,7 +50,7 @@ def load_data():
     df=pd.read_csv("spotify_preprocessed_dataset.csv")
     st.write('Loading Data')
     st.write(df.head())
-    return 
+    return df
 
 @st.cache_resource
 def load_model():
