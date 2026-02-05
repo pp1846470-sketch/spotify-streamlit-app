@@ -104,11 +104,10 @@ elif page == "Song Popularity Prediction":
     album_encoded = 1 if album_type == "single" else 0
     explicit_encoded = 1 if explicit == "Yes" else 0
 
-    X_input = np.array([[artist_popularity,
-                          artist_followers,
-                          track_duration,
-                          album_encoded,
-                          explicit_encoded]])
+    # ['track_number', 'track_popularity', 'explicit', 'artist_popularity',
+    #    'artist_followers', 'album_total_tracks', 'track_duration_min',
+    #    'album_release_year']
+    X_input = np.array([[1,100,artist_popularity,explicit_encoded ,artist_followers,track_duration,album_encoded,2025]])
 
     if st.button("Predict Song Success"):
         pred = model.predict(X_input)[0]
