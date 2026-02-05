@@ -195,7 +195,7 @@ elif page == "Model Performance":
     X["explicit"] = X["explicit"].apply(lambda x: 1 if x == True else 0)
     X.describe()
     y = df["popular"]
-
+    X.describe()
     y_pred = model.predict(X)
 
     cm = confusion_matrix(y, y_pred)
