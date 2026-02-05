@@ -181,7 +181,7 @@ elif page == "Album Insights":
 # =================================
 elif page == "Model Performance":
     st.title("🧠 Model Performance & Insights")
-
+    st.write(df.head())
     X = df[
         ["artist_popularity",
          "artist_followers",
