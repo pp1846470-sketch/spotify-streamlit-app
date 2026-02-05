@@ -198,12 +198,12 @@ elif page == "Model Performance":
   
     y_pred = model.predict(X)
 
-    # cm = confusion_matrix(y, y_pred)
+    cm = confusion_matrix(y, y_pred)
 
-    # st.subheader("Confusion Matrix")
-    # fig4, ax4 = plt.subplots()
-    # sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax4)
-    # st.pyplot(fig4)
+    st.subheader("Confusion Matrix")
+    fig4, ax4 = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax4)
+    st.pyplot(fig4)
 
     # st.subheader("Model Metrics")
     # st.write(f"Accuracy: {accuracy_score(y, y_pred):.2f}")
