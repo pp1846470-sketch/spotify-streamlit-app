@@ -110,7 +110,7 @@ elif page == "Song Popularity Prediction":
     # ['track_number', 'track_popularity', 'explicit', 'artist_popularity',
     #    'artist_followers', 'album_total_tracks', 'track_duration_min',
     #    'album_release_year']
-    X_input = np.array([[1,100,artist_popularity,explicit_encoded ,artist_followers,track_duration,album_encoded,2025]])
+    X_input = np.array([[artist_popularity,explicit_encoded ,artist_followers,track_duration,album_encoded]])
 
     if st.button("Predict Song Success"):
         pred = model.predict(X_input)[0]
@@ -187,7 +187,7 @@ elif page == "Model Performance":
     
    
     X = df[
-        ["track_number","track_popularity", "explicit", "artist_popularity",  "artist_followers", "album_total_tracks",  "track_duration_min",
+        ["track_popularity", "explicit", "artist_popularity",  "artist_followers", "album_total_tracks",  "track_duration_min",
          "album_type"
          ]
     ].copy()
