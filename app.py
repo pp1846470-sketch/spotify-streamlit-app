@@ -54,7 +54,7 @@ def load_data():
 
 @st.cache_resource
 def load_model():
-    with open("model.pkl", "rb") as f:
+    with open("newmodel.pkl", "rb") as f:
         return pickle.load(f)
 
 df = load_data()
