@@ -196,8 +196,8 @@ elif page == "Model Performance":
     st.write(X.describe())
     st.write(X.head())
     y = df["popular"]
-    st.write(y)
-    # y_pred = model.predict(X)
+  
+    y_pred = model.predict(X)
 
     # cm = confusion_matrix(y, y_pred)
 
