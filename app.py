@@ -182,6 +182,7 @@ elif page == "Album Insights":
 elif page == "Model Performance":
     st.title("🧠 Model Performance & Insights")
     st.write(df.head())
+    df= load_modal()
     X = df[
         ["artist_popularity",
          "artist_followers",
