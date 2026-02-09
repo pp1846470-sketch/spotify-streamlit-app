@@ -6,18 +6,16 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import seaborn as sns
 
-# ---------------------------------
 # PAGE CONFIG
-# ---------------------------------
+
 st.set_page_config(
     page_title="Spotify Song Success Intelligence",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ---------------------------------
 # CUSTOM GREEN THEME CSS
-# ---------------------------------
+
 st.markdown("""
 <style>
 body {
@@ -42,9 +40,8 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------
 # LOAD DATA & MODEL
-# ---------------------------------
+
 @st.cache_data
 def load_data():
     df=pd.read_csv("spotify_preprocessed_dataset.csv")
@@ -60,9 +57,8 @@ def load_model():
 df = load_data()
 model = load_model()
 
-# ---------------------------------
 # SIDEBAR NAVIGATION
-# ---------------------------------
+
 page = st.sidebar.radio(
     "Navigate",
     [
@@ -74,9 +70,8 @@ page = st.sidebar.radio(
     ]
 )
 
-# =================================
 # HOME PAGE
-# =================================
+
 if page == "Home":
     st.markdown("""
     <div class="center card">
@@ -87,11 +82,10 @@ if page == "Home":
     </div>
     """, unsafe_allow_html=True)
 
-# =================================
 # SONG POPULARITY PREDICTION
-# =================================
+
 elif page == "Song Popularity Prediction":
-    st.title("🔥 Song Popularity Prediction")
+    st.title("Song Popularity Prediction")
 
     col1, col2 = st.columns(2)
 
@@ -119,9 +113,9 @@ elif page == "Song Popularity Prediction":
         st.subheader("Prediction Result")
 
         if pred == 1:
-            st.success("🎯 HIT SONG")
+            st.success("HIT SONG")
         else:
-            st.error("❌ NOT A HIT")
+            st.error("NOT A HIT")
 
         st.progress(prob)
         st.write(f"**Probability of Success:** {prob:.2f}")
@@ -138,11 +132,10 @@ elif page == "Song Popularity Prediction":
             "have a higher chance of becoming successful."
         )
 
-# =================================
 # ARTIST & GENRE ANALYSIS
-# =================================
+
 elif page == "Artist & Genre Analysis":
-    st.title("🎤 Artist & Genre Analysis")
+    st.title("Artist & Genre Analysis")
 
     st.subheader("Top Genres by Average Popularity")
     genre_pop = df.groupby("artist_genres")["track_popularity"].mean().sort_values(ascending=False).head(10)
@@ -160,11 +153,10 @@ elif page == "Artist & Genre Analysis":
     ax2.hist(df["artist_popularity"], bins=20)
     st.pyplot(fig2)
 
-# =================================
 # ALBUM INSIGHTS
-# =================================
+
 elif page == "Album Insights":
-    st.title("💿 Album Insights")
+    st.title("Album Insights")
 
     st.subheader("Album Type vs Popularity (Spread)")
     fig3, ax3 = plt.subplots()
@@ -179,11 +171,10 @@ elif page == "Album Insights":
     size_trend = df.groupby("album_total_tracks")["track_popularity"].mean()
     st.line_chart(size_trend)
 
-# =================================
 # MODEL PERFORMANCE PAGE
-# =================================
+
 elif page == "Model Performance":
-    st.title("🧠 Model Performance & Insights")
+    st.title("Model Performance & Insights")
     
    
     X = df[
