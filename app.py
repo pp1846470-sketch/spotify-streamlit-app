@@ -55,7 +55,10 @@ def load_data():
 # ===============================
 @st.cache_resource
 def load_model():
+    import os
+    st.write("Files in directory:", os.listdir())
     saved = joblib.load("model_pipeline.pkl")
+    st.write("Loaded object type:", type(saved))
     return saved
     
 df = load_data()
