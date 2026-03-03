@@ -6,16 +6,18 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import seaborn as sns
 
+# ===============================
 # PAGE CONFIG
-
+# ===============================
 st.set_page_config(
     page_title="Spotify Song Success Intelligence",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# CUSTOM GREEN THEME CSS
-
+# ===============================
+# CUSTOM CSS
+# ===============================
 st.markdown("""
 <style>
 body {
@@ -40,25 +42,34 @@ h1, h2, h3 {
 </style>
 """, unsafe_allow_html=True)
 
-# LOAD DATA & MODEL
-
+# ===============================
+# LOAD DATA
+# ===============================
 @st.cache_data
 def load_data():
-    df=pd.read_csv("spotify_preprocessed_dataset.csv")
-    st.write('Loading Data')
-    st.write(df.head())
+    df = pd.read_csv("spotify_preprocessed_dataset.csv")
     return df
 
+# ===============================
+# LOAD MODEL PIPELINE
+# ===============================
 @st.cache_resource
 def load_model():
-    with open("newmodel.pkl", "rb") as f:
-        return pickle.load(f)
+    with open("model_pipeline.pkl", "rb") as f:
+        saved = pickle.load(f)
+    return saved
 
 df = load_data()
-model = load_model()
+saved = load_model()
 
-# SIDEBAR NAVIGATION
+model = saved["model"]
+scaler = saved["scaler"]
+features = saved["features"]
+threshold = saved["threshold"]
 
+# ===============================
+# SIDEBAR
+# ===============================
 page = st.sidebar.radio(
     "Navigate",
     [
@@ -70,8 +81,9 @@ page = st.sidebar.radio(
     ]
 )
 
-# HOME PAGE
-
+# ===============================
+# HOME
+# ===============================
 if page == "Home":
     st.markdown("""
     <div class="center card">
@@ -82,9 +94,11 @@ if page == "Home":
     </div>
     """, unsafe_allow_html=True)
 
-# SONG POPULARITY PREDICTION
-
+# ===============================
+# PREDICTION PAGE
+# ===============================
 elif page == "Song Popularity Prediction":
+
     st.title("Song Popularity Prediction")
 
     col1, col2 = st.columns(2)
@@ -97,18 +111,35 @@ elif page == "Song Popularity Prediction":
     with col2:
         album_type = st.selectbox("Album Type", ["album", "single"])
         explicit = st.selectbox("Explicit Content", ["No", "Yes"])
+        album_total_tracks = st.number_input("Album Total Tracks", 1, 50, 10)
 
+    # Encoding
     album_encoded = 1 if album_type == "single" else 0
     explicit_encoded = 1 if explicit == "Yes" else 0
 
-    # ['track_number', 'track_popularity', 'explicit', 'artist_popularity',
-    #    'artist_followers', 'album_total_tracks', 'track_duration_min',
-    #    'album_release_year']
-    X_input = np.array([[artist_popularity,explicit_encoded ,artist_followers,track_duration,album_encoded]])
+    # Create input dictionary (MATCH TRAINING)
+    input_dict = {
+        "explicit": explicit_encoded,
+        "artist_popularity": artist_popularity,
+        "artist_followers": artist_followers,
+        "album_total_tracks": album_total_tracks,
+        "track_duration_min": track_duration,
+        "album_type": album_encoded
+    }
+
+    # Convert to DataFrame
+    X_input = pd.DataFrame([input_dict])
+
+    # Ensure correct order
+    X_input = X_input[features]
+
+    # Scale input
+    X_scaled = scaler.transform(X_input)
 
     if st.button("Predict Song Success"):
-        pred = model.predict(X_input)[0]
-        prob = model.predict_proba(X_input)[0][1]
+
+        prob = model.predict_proba(X_scaled)[0][1]
+        pred = 1 if prob > threshold else 0
 
         st.subheader("Prediction Result")
 
@@ -117,93 +148,55 @@ elif page == "Song Popularity Prediction":
         else:
             st.error("NOT A HIT")
 
-        st.progress(prob)
+        st.progress(float(prob))
         st.write(f"**Probability of Success:** {prob:.2f}")
 
-        if prob > 0.7:
-            st.write("🟢 **High Confidence Prediction**")
-        elif prob > 0.4:
-            st.write("🟡 **Medium Confidence Prediction**")
-        else:
-            st.write("🔴 **Low Confidence Prediction**")
-
-        st.info(
-            "Songs by popular artists with more followers and single releases "
-            "have a higher chance of becoming successful."
-        )
-
-# ARTIST & GENRE ANALYSIS
-
+# ===============================
+# ANALYSIS
+# ===============================
 elif page == "Artist & Genre Analysis":
+
     st.title("Artist & Genre Analysis")
 
-    st.subheader("Top Genres by Average Popularity")
     genre_pop = df.groupby("artist_genres")["track_popularity"].mean().sort_values(ascending=False).head(10)
     st.bar_chart(genre_pop)
 
-    st.subheader("Genre Distribution")
-    genre_count = df["artist_genres"].value_counts().head(6)
-    fig1, ax1 = plt.subplots()
-    ax1.pie(genre_count, labels=genre_count.index, autopct="%1.1f%%", startangle=90)
-    ax1.axis("equal")
-    st.pyplot(fig1)
-
-    st.subheader("Artist Popularity Distribution")
-    fig2, ax2 = plt.subplots()
-    ax2.hist(df["artist_popularity"], bins=20)
-    st.pyplot(fig2)
-
-# ALBUM INSIGHTS
-
+# ===============================
+# ALBUM
+# ===============================
 elif page == "Album Insights":
+
     st.title("Album Insights")
 
-    st.subheader("Album Type vs Popularity (Spread)")
-    fig3, ax3 = plt.subplots()
-    sns.boxplot(x="album_type", y="track_popularity", data=df, ax=ax3)
-    st.pyplot(fig3)
+    fig, ax = plt.subplots()
+    sns.boxplot(x="album_type", y="track_popularity", data=df, ax=ax)
+    st.pyplot(fig)
 
-    st.subheader("Popularity Trend Over Years")
-    year_trend = df.groupby("album_release_year")["track_popularity"].mean()
-    st.area_chart(year_trend)
-
-    st.subheader("Album Size Impact on Popularity")
-    size_trend = df.groupby("album_total_tracks")["track_popularity"].mean()
-    st.line_chart(size_trend)
-
-# MODEL PERFORMANCE PAGE
-
+# ===============================
+# MODEL PERFORMANCE
+# ===============================
 elif page == "Model Performance":
-    st.title("Model Performance & Insights")
-    
-   
-    X = df[
-        ["track_popularity", "explicit", "artist_popularity",  "artist_followers", "album_total_tracks",  "track_duration_min",
-         "album_type"
-         ]
-    ].copy()
 
-    X["album_type"] = X["album_type"].apply(lambda x: 1 if x == "single" else 0)
-    X["explicit"] = X["explicit"].apply(lambda x: 1 if x == True else 0)
-    st.write(X.describe())
-    st.write(X.head())
+    st.title("Model Performance")
+
+    X = df[features].copy()
+
+    X["album_type"] = (X["album_type"] == "single").astype(int)
+    X["explicit"] = (X["explicit"] == True).astype(int)
+
+    X_scaled = scaler.transform(X)
     y = df["popular"]
-  
-    y_pred = model.predict(X)
+
+    y_prob = model.predict_proba(X_scaled)[:, 1]
+    y_pred = (y_prob > threshold).astype(int)
 
     cm = confusion_matrix(y, y_pred)
 
-    st.subheader("Confusion Matrix")
-    fig4, ax4 = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Greens", ax=ax4)
-    st.pyplot(fig4)
+    fig, ax = plt.subplots()
+    sns.heatmap(cm, annot=True, fmt="d", ax=ax)
+    st.pyplot(fig)
 
-    st.subheader("Model Metrics")
-    st.write(f"Accuracy: {accuracy_score(y, y_pred):.2f}")
-    st.write(f"Precision: {precision_score(y, y_pred):.2f}")
-    st.write(f"Recall: {recall_score(y, y_pred):.2f}")
-    st.write(f"F1 Score: {f1_score(y, y_pred):.2f}")
-
-    st.subheader("Feature Importance (Logistic Regression)")
-    importance = pd.Series(model.coef_[0], index=X.columns)
-    st.bar_chart(importance.sort_values(ascending=False))
+    st.write("Accuracy:", accuracy_score(y, y_pred))
+    st.write("Precision:", precision_score(y, y_pred))
+    st.write("Recall:", recall_score(y, y_pred))
+    st.write("F1 Score:", f1_score(y, y_pred))
