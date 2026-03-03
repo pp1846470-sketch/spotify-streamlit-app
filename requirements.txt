@@ -1,6 +1,5 @@
-streamlit
+scikit-learn==(same_version_jo_colab_me_tha)
+joblib
 pandas
 numpy
-scikit-learn
-matplotlib
-seaborn
+streamlit
