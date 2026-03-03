@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import pickle
+import joblib
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score, f1_score
 import seaborn as sns
@@ -55,10 +55,9 @@ def load_data():
 # ===============================
 @st.cache_resource
 def load_model():
-    with open("model_pipeline.pkl", "rb") as f:
-        saved = pickle.load(f)
+    saved = joblib.load("model_pipeline.pkl")
     return saved
-
+    
 df = load_data()
 saved = load_model()
 
