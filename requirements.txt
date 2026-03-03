@@ -1,4 +1,4 @@
-scikit-learn==(same_version_jo_colab_me_tha)
+scikit-learn==(1.6.1)
 joblib
 pandas
 numpy
