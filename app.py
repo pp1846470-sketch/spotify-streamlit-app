@@ -51,8 +51,9 @@ def load_data():
 
 @st.cache_resource
 def load_model():
-    with open("newmodel.pkl", "rb") as f:
-        return pickle.load(f)
+    with open("model_pipeline.pkl", "rb") as f:
+        saved = pickle.load(f)
+        return saved
 
 df = load_data()
 model = load_model()
