@@ -206,4 +206,4 @@ elif page == "Model Performance":
 
     st.subheader("Feature Importance (Logistic Regression)")
     importance = pd.Series(model.coef_[0], index=X.columns)
-    st.bar_chart(importance.sort_values(ascending=False)) this code is github solve error
+    st.bar_chart(importance.sort_values(ascending=False)) 
